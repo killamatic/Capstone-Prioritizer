@@ -1,5 +1,5 @@
 from scheduler.scheduler import DayScheduler
-from factories import make_event
+from tests.factories import make_event
 from datetime import datetime
 
 def test_no_overlap_in_schedule():
