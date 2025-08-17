@@ -23,6 +23,6 @@ class DefaultRules:
         return self.sort_prio(events, descending)
         # raise NotImplementedError("Sort logic not implemented yet.")
 
-    def filter(self, events, filter):
+    def filter(self, events):
         raise NotImplementedError("Filter logic not implemented yet.")
     
