@@ -5,10 +5,10 @@ from datetime import datetime
 def test_sorts_events_by_priority():
     rules = DefaultRules()
     events = [
-        make_event("Low", priority=1),
-        make_event("Medium", priority=2),
-        make_event("Medium", priority=2),
-        make_event("High", priority=3),
+        make_event("Low", priority=1, start=datetime(2025,1,1,11,0)),
+        make_event("Medium", priority=2, start=datetime(2025,1,1,11,0)),
+        make_event("Medium", priority=2, start=datetime(2025,1,1,11,0)),
+        make_event("High", priority=3, start=datetime(2025,1,1,11,0)),
     ]
     sorted_events = rules.sort(events)
     assert sorted_events[0]["name"] == "High"
@@ -45,12 +45,12 @@ def test_rejects_events_outside_work_hours():
     filtered_events = rules.filter(events)
     assert len(filtered_events) == 0
 
-# def test_prio_similar_events():
-#     rules = DefaultRules()
-#     similar = make_similar_events()
-#     events = [
-#         similar.get(0),
-#         similar.get(1),
-#     ]
-#     sorted_events = rules.priofilter(events)
-#     assert sorted_events[0]["name"] == "1Prio"
+def test_prio_similar_events():
+    rules = DefaultRules()
+    similar = make_similar_events()
+    events = [
+        similar.get(0),
+        similar.get(1),
+    ]
+    sorted_events = rules.priofilter(events)
+    assert sorted_events[0]["name"] == "1Prio"

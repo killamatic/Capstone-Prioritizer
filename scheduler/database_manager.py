@@ -1,12 +1,12 @@
 import sqlite3
 from pathlib import Path
 
-class PreferenceStore:
+class DatabaseManager:
     def __init__(self, db_path="preferences.db"):
         self.db_path = Path(db_path)
         self.conn = None
         self.cursor = None
-        self._init_db()
+        # self._init_db()
 
 
     def _init_db(self):
