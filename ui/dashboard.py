@@ -60,8 +60,8 @@
 import tkinter as tk
 from tkinter import ttk
 from ui.add_event import AddEventFrame
+from ui.view_events import ViewEventsFrame
 # TODO: implement more screens
-# from ui.view_events import ViewEventsFrame
 # from ui.run_prediction import RunPredictionFrame
 # from ui.reports import ReportsFrame
 
@@ -76,9 +76,9 @@ class Dashboard(tk.Frame):
 
         ttk.Button(self, text="Add Event", width=30,
                    command=lambda: controller.show_frame(AddEventFrame)).pack(pady=10)
+        ttk.Button(self, text="View Events", width=30,
+                   command=lambda: controller.show_frame(ViewEventsFrame)).pack(pady=10)
         # TODO: implement more screens
-        # ttk.Button(self, text="View Events", width=30,
-        #            command=lambda: controller.show_frame(ViewEventsFrame)).pack(pady=10)
         # ttk.Button(self, text="Run Prediction", width=30,
         #            command=lambda: controller.show_frame(RunPredictionFrame)).pack(pady=10)
         # ttk.Button(self, text="Reports", width=30,

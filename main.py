@@ -1,8 +1,8 @@
 import tkinter as tk
 from ui.dashboard import Dashboard
 from ui.add_event import AddEventFrame
+from ui.view_events import ViewEventsFrame
 # TODO: implement more screens
-# from ui.view_events import ViewEventsFrame
 # from ui.run_prediction import RunPredictionFrame
 # from ui.reports import ReportsFrame
 
@@ -25,7 +25,8 @@ class SchedulerApp(tk.Tk):
 
         # Initialize all screens
         # for F in (Dashboard, AddEventFrame, ViewEventsFrame, RunPredictionFrame, ReportsFrame): # How it should look in the future once implemented multiple pages
-        for F in (Dashboard, AddEventFrame):#, ViewEventsFrame, RunPredictionFrame, ReportsFrame):
+        # for F in (Dashboard, AddEventFrame):#, ViewEventsFrame, RunPredictionFrame, ReportsFrame):
+        for F in (Dashboard, AddEventFrame, ViewEventsFrame):#, RunPredictionFrame, ReportsFrame):
             frame = F(container, self)
             self.frames[F] = frame
             frame.grid(row=0, column=0, sticky="nsew")
