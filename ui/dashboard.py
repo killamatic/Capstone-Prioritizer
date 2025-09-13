@@ -58,7 +58,7 @@
 
 
 import tkinter as tk
-from tkinter import ttk
+from tkinter import ttk, messagebox
 from ui.add_event import AddEventFrame
 from ui.view_events import ViewEventsFrame
 # TODO: implement more screens
@@ -70,6 +70,8 @@ class Dashboard(tk.Frame):
     def __init__(self, parent, controller):
         super().__init__(parent)
         self.controller = controller
+        # Store the shared DatabaseManager instance
+        self.db_manager = controller.db_manager
 
         tk.Label(self, text=f"Welcome, {controller.username} ({controller.role})",
                  font=("Helvetica", 14, "bold")).pack(pady=15)
@@ -83,5 +85,15 @@ class Dashboard(tk.Frame):
         #            command=lambda: controller.show_frame(RunPredictionFrame)).pack(pady=10)
         # ttk.Button(self, text="Reports", width=30,
         #            command=lambda: controller.show_frame(ReportsFrame)).pack(pady=10)
+        # Button to show a database query result
+        db_button = ttk.Button(self, text="Check User Count", command=self.check_users)
+        db_button.pack(pady=10)
         ttk.Button(self, text="Exit", width=30,
                    command=controller.quit).pack(pady=10)
+    
+    def check_users(self):
+        """Uses the shared db_manager to query the database."""
+        self.db_manager.connect_db()
+        user_count = self.db_manager.get_user_count()
+        if user_count is not None:
+            tk.messagebox.showinfo("User Count", f"There are {user_count} users in the database.")
