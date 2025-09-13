@@ -6,9 +6,9 @@ class DefaultRules:
         self.work_start = work_start
         self.work_end = work_end
 
-        """
-        Sorting by use of compound sort.
-        """
+    """
+    Sorting by compound sort.
+    """
     def sort(self, events, feedback=None, descending=True):
         # sort based on importance
         # sorted_importance = self.sort_importance(events, descending)
@@ -25,7 +25,9 @@ class DefaultRules:
         # raise NotImplementedError("Sort logic not implemented yet.")
 
 
-
+    """
+    Only show events during work hours
+    """
     def filter(self, events):
         return list(filter(
         lambda e: self.work_start <= e["start"].hour < self.work_end,
