@@ -1,5 +1,5 @@
 import tempfile
-from scheduler.database_manager import DatabaseManager
+from db.database_manager import DatabaseManager
 
 def test_saves_and_loads_preferences():
     with tempfile.NamedTemporaryFile() as tmp:
