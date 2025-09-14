@@ -40,6 +40,9 @@ class AddEventFrame(tk.Frame):
         date = self.event_date.get()
         # TODO: Remove SQL injection ability here
         # TODO: format dates here
+        if len(date) == 0 or len(name) == 0:
+            print("Need to add data to the required  NOT NULL fields: date & name")
+            return 
         formatted_date = datetime.strptime(date, '%m/%d/%y').strftime('%Y-%m-%d')
         # TODO: save event to DB
         self.db_manager.add_event(name, formatted_date)
