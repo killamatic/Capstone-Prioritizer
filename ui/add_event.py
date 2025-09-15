@@ -1,5 +1,5 @@
 import tkinter as tk
-from tkinter import ttk
+from tkinter import ttk, messagebox
 # from ui.dashboard import Dashboard
 from datetime import datetime
 
@@ -51,5 +51,6 @@ class AddEventFrame(tk.Frame):
         # TODO: run prediction logic on event and save prediction to Db
         if unique_event_id is not None:
             print(f"Event saved: {name} at {formatted_date} represented as: {date}")
+            tk.messagebox.showinfo("Saved Event!", "Event now viewable from view events screen")
         else:
             print("error happened, the unique id associated is None")
