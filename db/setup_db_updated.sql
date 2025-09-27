@@ -45,7 +45,7 @@ CREATE TABLE IF NOT EXISTS events (
 CREATE TABLE IF NOT EXISTS predictions (
     prediction_id INT AUTO_INCREMENT PRIMARY KEY,
     prediction_timestamp DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    expected_priority INT,
+    predicted_priority INT,
     event_id INT NOT NULL,
     FOREIGN KEY (event_id) REFERENCES events(events_id),
 );

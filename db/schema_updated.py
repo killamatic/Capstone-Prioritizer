@@ -13,7 +13,6 @@ CREATE_EVENTS_TABLE = """
 CREATE TABLE IF NOT EXISTS events (
     event_id INT AUTO_INCREMENT PRIMARY KEY,
     event_name VARCHAR(255) NOT NULL,
-    -- event_date DATETIME NOT NULL,
     event_date DATE NOT NULL,
     event_duration DATETIME NOT NULL,
     predicted_priority INT,
@@ -30,7 +29,7 @@ CREATE_PREDICTIONS_TABLE = """
 CREATE TABLE IF NOT EXISTS predictions (
     prediction_id INT AUTO_INCREMENT PRIMARY KEY,
     prediction_timestamp DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    expected_priority INT,
+    predicted_priority INT,
     event_id INT NOT NULL,
     FOREIGN KEY (event_id) REFERENCES events(events_id),
 );
