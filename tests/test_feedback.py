@@ -1,4 +1,4 @@
-from scheduler.feedback import FeedbackTracker
+from ml.feedback import FeedbackTracker
 
 def test_positive_feedback_boosts_priority():
     fb = FeedbackTracker()
