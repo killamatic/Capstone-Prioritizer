@@ -1,6 +1,3 @@
-# Creates table definitions as SQL strings
-
-
 # Table definitions as SQL strings
 CREATE_USERS_TABLE = """
 CREATE TABLE IF NOT EXISTS users (
