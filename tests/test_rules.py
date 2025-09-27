@@ -52,5 +52,5 @@ def test_prio_similar_events():
         similar.get(0),
         similar.get(1),
     ]
-    sorted_events = rules.priofilter(events)
+    sorted_events = rules.sort(events)
     assert sorted_events[0]["name"] == "1Prio"
