@@ -41,4 +41,6 @@ Navigate to the setup_db.sql file folder and run //if mysql is in path
 mysql -u root -p < setup_db.sql
 //setup_db.sql will create a user, create the database, and define the schema after this has been run, the application should be able to connect to the setup db
 
-
+had to install 
+pip install -U scikit-learn for the ML, need to add this to the required softwares & requirements.txt
+pip install mysql-connector-python faker pandas
