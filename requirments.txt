@@ -3,3 +3,4 @@ tkinter
 scikit-learn
 faker
 pandas
+numpy
