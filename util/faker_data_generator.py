@@ -84,14 +84,17 @@ def generate_synthetic_events(n=100):
             "event_date": event_date_raw.isoformat(),
             "time_until_event_days": time_until_event_days,
             # Target variable (Y) 
-            "calculated_priority_score": final_score
+            # "calculated_priority_score": final_score
+            # "predicted_priority": final_score # is generating priority from linear relations
+            "generated_priority": final_score
         }
         events.append(event)
     return pd.DataFrame(events)
 
 if __name__ == "__main__":
     df = generate_synthetic_events(200)
-    output_filepath = "../data/synthetic_training_data.csv"
+    # output_filepath = "../data/synthetic_training_data.csv"
+    output_filepath = "../data/synthetic_training_data_updated.csv"
     # df.to_csv("../data/fake_events.csv", index=False)
     df.to_csv(output_filepath, index=False)
     # print("Generated 200 fake events => data/fake_events.csv")
