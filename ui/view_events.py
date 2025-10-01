@@ -25,16 +25,18 @@ class ViewEventsFrame(tk.Frame):
         # Table for displaying events
         self.tree = ttk.Treeview(
             self,
-            columns=("Name", "Date", "Priority"),
+            columns=("Name", "Date", "Duration", "Priority"),
             show="headings",
             height=10
         )
         self.tree.heading("Name", text="Event Name")
         self.tree.heading("Date", text="Date")
+        self.tree.heading("Duration", text="Duration")
         self.tree.heading("Priority", text="Priority")
 
         self.tree.column("Name", width=200, anchor="w")
         self.tree.column("Date", width=100, anchor="center")
+        self.tree.column("Duration", width=100, anchor="center")
         self.tree.column("Priority", width=80, anchor="center")
 
         self.tree.pack(fill="both", expand=True, pady=10)
@@ -44,23 +46,26 @@ class ViewEventsFrame(tk.Frame):
         button_frame.pack(pady=10)
 
         ttk.Button(button_frame, text="Refresh",
-                #    command=self.load_events).grid(row=0, column=0, padx=5)
                    command=self.load_db_events).grid(row=0, column=0, padx=5)
         
         ttk.Button(button_frame, text="Remove Selected Row",
-                #    command=self.load_events).grid(row=0, column=0, padx=5)
                    command=self.delete_event).grid(row=0, column=1, padx=5)
+
+        ttk.Button(button_frame, text="Confirm Selected",
+                   command=self.confirm_event).grid(row=0, column=2, padx=5)
+
+        ttk.Button(button_frame, text="Deny Selected",
+                   command=self.deny_event).grid(row=0, column=3, padx=5)
+        
+
 
         ttk.Button(self, text="< Back to Dashboard",
                    command=lambda: controller.show_frame(controller.frames.keys().__iter__().__next__())).pack(pady=5)
 
-
-        # # Used to load sample data
-        # self.load_events()
-        # Now implments database use
         self.load_db_events()
 
     # Old version of loading
+    # TODO: use this for test mocking
     def load_events(self):
         """Load events into the Treeview (replace with DB call later)."""
         # Clear current rows
@@ -77,9 +82,18 @@ class ViewEventsFrame(tk.Frame):
         for event in mock_events:
             self.tree.insert("", "end", values=event)
     
- 
+#     0event_id INT AUTO_INCREMENT PRIMARY KEY, 
+#     1event_name VARCHAR(255) NOT NULL,
+#     2event_date DATE NOT NULL,
+#     3event_duration INT NOT NULL,
+#     4predicted_priority INT,
+#     5actual_priority INT,
+#     6participant_count INT,
+#     7created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+#     8created_by INT,
+
     """
-    Load events into the Treeview (replace with DB call later).
+    Load events into the Treeview from the Db.
     """
     def load_db_events(self):
         # Clear current rows
@@ -90,14 +104,17 @@ class ViewEventsFrame(tk.Frame):
         event_list = self.db_manager.get_all_events()
 
         # TODO: test default rules to sort events
-        # sorted_event_list = DefaultRules.sort(event_list)
+        sorted_event_list = DefaultRules.sort(event_list)
 
         # insert each event into the tree
-        for event in event_list: #sorted_event_list:
+        for event in event_list:
+        # for event in sorted_event_list:
+            print(event)
             # remove the event_id from the db data with a slice? is there a hiding method rather than information tossing?
             # self.tree.insert("", "end", values = event[1:])
             # self.tree.insert("", "end", iid=event[0], values = (event[1], event[2]))
-            self.tree.insert("", "end", iid=event[0], values = event[1:])
+            # self.tree.insert("", "end", iid=event[0], values = event[1:])
+            self.tree.insert("", "end", iid=event[0], values = (event[1], event[2], event[3], event[5]))
 
     # def delete_event(self, event_id):
     def delete_event(self):
@@ -121,3 +138,47 @@ class ViewEventsFrame(tk.Frame):
             self.load_db_events()
         else:
             print(f"failed removal opperation of id: {event_id}")
+
+
+    # TODO: add the prediction check prior to prediction modification
+    def confirm_event(self):
+        """Handler for confirming an event."""
+        selected_item = self.tree.selection()
+        if not selected_item:
+            tk.messagebox.showwarning("No selection", "Select a row to confirm")
+            return
+
+        event_id = selected_item[0]
+
+        # now that we have the event id, search for a prediction object in the predictions table
+        # if no exist, add dialog box for only can confirm/deny events that have been predicted
+        # Feedback boolean confirmed = true
+        successful_confirmation = self.db_manager.confirm_prediction(event_id)
+
+        # grab information on the row from the cached data
+        item_data = self.tree.item(event_id)
+        event_name = item_data['values'][0]
+        print(f"Confirming event {event_name}")
+
+        if successful_confirmation:
+            tk.messagebox.showinfo("Confirmed", f"Event {event_name} confirmed")
+
+    # TODO: add the prediction check prior to prediction modification
+    def deny_event(self):
+        """Handler for denying an event."""
+        selected_item = self.tree.selection()
+        if not selected_item:
+            tk.messagebox.showwarning("No selection", "Select a row to deny")
+            return
+
+        event_id = selected_item[0]
+        successful_denial = self.db_manager.deny_prediction(event_id)
+        # grab information on the row from the cached data
+        item_data = self.tree.item(event_id)
+        event_name = item_data['values'][0]
+        print(f"Denying event {event_name}")
+
+        if successful_denial:
+            tk.messagebox.showinfo("Denied", f"Event {event_name} denied")
+    
+    
