@@ -1,16 +1,25 @@
 # Capstone-Prioritizer
-An event prioritizing application with personalization through system training
-# title
-## subtitle
-### sub-subtitles
-This text is **bolded**  
-![This is the alt text, this image is the welcome image to the readme](Images/readme/Welcome.jpg)
+## Linear Regression Priority Prediction Event Scheduler
+An event prioritizing application with personalization through machine learning
+
+![Welcome image alt text](Images/readme/Welcome.jpg)
 
 
-To engage the venv:
+navigate to main on vscode start:
+cd event_prioritizer/Capstone-Prioritizer/
+
+To engage the venv: 
 source venv/Scripts/activate
 
+run the program
+python main.py
 
+
+
+if the pytest is not running, python executable may be taken from previous version on local machine, and disregard tkinter installation: (when inside venv)
+where python
+ Copy the path of the first instance from where python to the copy_python_path_here variable in the next command
+"copy_python_path_here" -m pytest test_ui.py
 
 
 
@@ -19,6 +28,10 @@ windows > services
 Setup the mysql instance
 //need to use program files path because MySQL is not in PATH
 "C:\Program Files\MySQL\MySQL Server 8.0\bin\mysql.exe" -u root -p < setup_db.sql
+"C:\Program Files\MySQL\MySQL Server 8.0\bin\mysql.exe" -u root -p < setup_db_updated.sql
+
+from Capstone-prioritizer folder// where main is use this command to setup the db assuming that the MySQL setup was done according to the MySQL base settings
+"C:\Program Files\MySQL\MySQL Server 8.0\bin\mysql.exe" -u root -p < ./db/setup_db_updated.sql
 
 
 If MySQL becomes corrupted, 
