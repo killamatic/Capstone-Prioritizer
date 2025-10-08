@@ -45,7 +45,7 @@ import pandas as pd
 from sklearn.linear_model import LinearRegression
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import r2_score
-import joblib
+import joblib #for model persistance
 
 class PriorityModel:
     def __init__(self, model_path="priority_model.pkl"):
@@ -73,22 +73,56 @@ class PriorityModel:
         # Save model
         joblib.dump(self.model, self.model_path)
 
+    # Take left joined events and predictions tables for values: 
+    def train_updated(self, data: pd.DataFrame) -> float:
+        """
+        Train the linear regression model.
+        Expects data with columns: ['event_duration', 'participants_count', 'resources_required', 'priority_score']
+        """
+        print("inside the train updated method")
+        # Displays the column headers and the first 5 rows of data.
+        print(data.head())
+
+        # To see the first 10 rows:
+        print(data.head(10))
+
+        # take the data from the dependent variables
+        X = data[['event_duration', 'participant_count', 'days_until_event']]
+        y = data['actual_priority']
+
+        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+        self.model = LinearRegression()
+        self.model.fit(X_train, y_train)
+
+        y_pred = self.model.predict(X_test)
+        r2 = r2_score(y_test, y_pred)
+
+        print(f"Model trained with R² = {r2:.3f}")
+
+        # Save model
+        joblib.dump(self.model, self.model_path)
+        return r2
+
     def load(self):
-        """Load saved model from disk."""
+        """Load saved model from local files."""
         self.model = joblib.load(self.model_path)
 
-    def predict_priority(self, event_features: dict) -> float:
+    def predict_priority(self, event_features: dict) -> int:
         """
         Predict priority for a single event.
-        event_features: {'event_duration': 60, 'participants_count': 10, 'resources_required': 2}
+        event_features: {'event_duration': 60, 'participant_count': 10, 'days_until_event': 2}
         """
+        print("ML prediction, event features: ")
+        print(event_features)
+        
         if not self.model:
             self.load()
 
         features = [[
             event_features['event_duration'],
-            event_features['participants_count'],
-            event_features['resources_required']
+            event_features['participant_count'],
+            event_features['days_until_event']
         ]]
 
         prediction = self.model.predict(features)[0]
