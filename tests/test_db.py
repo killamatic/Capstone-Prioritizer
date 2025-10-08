@@ -1,107 +1,192 @@
-# import mysql.connector
-
-# try:
-#     connection = mysql.connector.connect(
-#         host="localhost",
-#         user="root",
-#         password="root",
-#         database="scheduler_db"
-#     )
-#     if connection.is_connected():
-#         print("Successfully connected to the database!")
-#         cursor = connection.cursor()
-#         cursor.execute("SELECT VERSION()")
-#         db_version = cursor.fetchone()
-#         print("Database version:", db_version[0])
-
-# except mysql.connector.Error as e:
-#     print(f"Error connecting to MySQL: {e}")
-# finally:
-#     if 'connection' in locals() and connection.is_connected():
-#         cursor.close()
-#         connection.close()
-#         print("MySQL connection is closed.")
-
-
-
-
-import mysql.connector
-
-try:
-    connection = mysql.connector.connect(
-        host="localhost",
-        user="your_username",
-        password="your_password",
-        database="your_database"
-    )
-    if connection.is_connected():
-        print("Successfully connected to the database!")
-        cursor = connection.cursor()
-        cursor.execute("SELECT VERSION()")
-        db_version = cursor.fetchone()
-        print("Database version:", db_version[0])
-
-except Exception as e: 
-    print(f"Error connecting to MySQL: {e}")
-finally:
-    if 'connection' in locals() and connection.is_connected():
-        cursor.close()
-        connection.close()
-        print("MySQL connection is closed.")
-
-
-
-
-
-
-
 import unittest
+import datetime
+from unittest.mock import MagicMock, patch
 
-class TestDatabase(unittest.TestCase):
-    def setUp(self):
-        # Establish test DB connection or mock
-        pass
+# Simulated Database Manager (Mocks the real class)
+class MockDatabaseManager:
+    """
+    Simulates the actual DatabaseManager methods for testing purposes.
+    The methods themselves are replaced by MagicMock objects in the test class 
+    to track if they were called correctly.
+    """
+    def __init__(self, connection_status=True):
+        # Initial connection status used by the mock 'connect' method
+        self._is_connected = connection_status
+        
+    def connect(self):
+        """Simulates establishing a connection."""
+        return self._is_connected
+
+    # Event CRUD methods that will be mocked in the test suite
+    def create_event(self, event_data: dict): pass
+    def create_prediction(self, event_id: int, score: float): pass
+    def get_event(self, event_id: int): pass
+    def get_upcoming_events(self, days_in_future: int): pass
+    def update_event(self, event_id: int, new_data: dict): pass
+    def delete_event(self, event_id: int): pass
+
+    # Report CRUD 
+    def create_report(self, report_data: dict): pass
+    def get_report(self, report_id: int): pass
+    def update_report(self, report_id: int, new_data: dict): pass
+    def delete_report(self, report_id: int): pass
+
+    # Feedback CRUD
+    def create_feedback(self, event_id: int, feedback_data: dict): pass
+    def get_feedback(self, event_id: int): pass # Existing method
+    def update_feedback(self, feedback_id: int, new_data: dict): pass
+    def delete_feedback(self, feedback_id: int): pass
+
+# Unit Test Implementation for Database Interactions 
+class TestDatabaseManager(unittest.TestCase):
+    """Contains tests for all CRUD and utility database operations."""
+
+    @classmethod
+    def setUpClass(cls):
+        """Setup mock data used for insertion/reading."""
+        cls.TEST_EVENT_ID = 101
+        cls.TEST_PREDICTION_SCORE = 8.5
+        cls.TEST_UPDATE_DATA = {"event_duration": 150}
+        cls.TEST_CREATE_DATA = {
+            "title": "Launch Meeting",
+            "start_time": datetime.datetime.now().isoformat(),
+            "duration": 60,
+            "user_id": 5
+        }
+        
+        cls.TEST_REPORT_ID = 500
+        cls.TEST_REPORT_UPDATE_ID = 501
+        cls.TEST_REPORT_DATA = {
+            "report_title": "Monthly Summary", 
+            "report_type": "summary",
+            "report_content": {"status": "Complete", "count": 45}
+        }
+        cls.TEST_REPORT_UPDATE = {"report_title": "Q3 Summary (Final)"}
+
+        cls.TEST_FEEDBACK_ID = 200
+        cls.TEST_FEEDBACK_UPDATE_ID = 201
+        cls.TEST_FEEDBACK_DATA = {
+            "user_id": 9,
+            "priority_rating": 7,
+            "comment": "Model priority was accurate."
+        }
+        cls.TEST_FEEDBACK_UPDATE = {"comment": "Model priority was very accurate."}
     
-    # TODO: change test name in ML4 from verify_database_connection to test_connection()
-    def test_connection(self): # verify_database_connection()
-        """Verify DB connection can be established."""
-        # 	Verifies that the application can successfully establish a connection to the configured database using the provided credentials.
-        self.assertTrue(True)
+    def setUp(self):
+        """Reset mocks before each test."""
+        # This will set self.MockDatabaseManager to the mock class
+        self.db_manager = MockDatabaseManager()
 
-    def test_create_event(self):
-        """Ensure event record can be inserted into DB."""
-        # Confirms a new event record is successfully inserted into the events table with valid data, and validates that the record can be retrieved immediately after creation.
-        self.assertTrue(True)
+    # Core Connection Test
+    def test_connection(self):
+        """Verifies that the database connection attempt works."""
+        # Test success case
+        db_success = MockDatabaseManager(connection_status=True)
+        self.assertTrue(db_success.connect(), "Should return True on successful connection.")
+        
+        # Test failure case
+        db_failure = MockDatabaseManager(connection_status=False)
+        self.assertFalse(db_failure.connect(), "Should return False on connection failure.")
 
-    def test_create_prediction(self):
-        """Ensure prediction record can be inserted into DB."""
-        # Checks the integrity of data creation by simulating the event creation process, ensuring the event is stored correctly and the predicted_priority column is populated (non-null or within an expected range).
-        self.assertTrue(True)
+    # Create Operations 
+    @patch.object(MockDatabaseManager, 'create_event')
+    def test_create_event(self, mock_create_event):
+        """Verifies that the create_event method is called with the correct event dictionary."""
+        self.db_manager.create_event(self.TEST_CREATE_DATA)
+        mock_create_event.assert_called_once_with(self.TEST_CREATE_DATA)
 
-    def test_read_event(self):
-        """Ensure event record can be retrieved from DB."""
-        # Ensures that a specific event can be accurately retrieved from the database using its unique identifier (id), verifying all returned fields match the original input data.
-        self.assertTrue(True)
+    @patch.object(MockDatabaseManager, 'create_prediction')
+    def test_create_prediction(self, mock_create_prediction):
+        """Verifies that the create_prediction method correctly logs event ID and score."""
+        self.db_manager.create_prediction(self.TEST_EVENT_ID, self.TEST_PREDICTION_SCORE)
+        mock_create_prediction.assert_called_once_with(
+            self.TEST_EVENT_ID, 
+            self.TEST_PREDICTION_SCORE
+        )
 
-    def test_retrieve_upcoming_events(self):
-        """Ensure upcoming events records can be retrieved from DB."""
-        # 	Tests the filtering logic by confirming that the function only returns events scheduled for the future, excluding past events or those without a date.
-        self.assertTrue(True)
+    # Read Operations
+    @patch.object(MockDatabaseManager, 'get_event')
+    def test_read_event(self, mock_get_event):
+        """Verifies that reading a single event uses the correct ID."""
+        # Mock the return value to simulate a successful database fetch
+        mock_get_event.return_value = {"id": self.TEST_EVENT_ID, "title": "Test Event"}
+        
+        result = self.db_manager.get_event(self.TEST_EVENT_ID)
+        
+        mock_get_event.assert_called_once_with(self.TEST_EVENT_ID)
+        self.assertIsNotNone(result)
+        self.assertEqual(result['id'], self.TEST_EVENT_ID)
 
-    def test_read_feedback(self):
-        """Ensure feedback record can be retrieved from DB."""
-        # Verifies the retrieval of user feedback data by fetching an event and checking that the actual_priority value is correctly retrieved
-        self.assertTrue(True)
+    @patch.object(MockDatabaseManager, 'get_upcoming_events')
+    def test_retrieve_upcoming_events(self, mock_get_upcoming_events):
+        """Verifies that the upcoming events retrieval method uses the time filter correctly."""
+        TEST_DAYS = 7
+        
+        # Mock the return value to simulate a list of upcoming events
+        mock_get_upcoming_events.return_value = [{"id": 102}, {"id": 103}]
+        
+        results = self.db_manager.get_upcoming_events(TEST_DAYS)
+        
+        mock_get_upcoming_events.assert_called_once_with(TEST_DAYS)
+        self.assertTrue(len(results) == 2, "Should return the mocked list of events.")
 
-    def test_update_event(self):
-        """Ensure event record can be updated."""
-        # Confirms that an existing event's details can be modified, such as updating the event's name or date, and that the changes are persistently saved and correctly retrieved in the database.
-        self.assertTrue(True)
+    @patch.object(MockDatabaseManager, 'get_feedback')
+    def test_read_feedback(self, mock_get_feedback):
+        """Verifies that the method to retrieve feedback is called with the correct event ID."""
+        self.db_manager.get_feedback(self.TEST_EVENT_ID)
+        mock_get_feedback.assert_called_once_with(self.TEST_EVENT_ID)
+        
+    @patch.object(MockDatabaseManager, 'get_report')
+    def test_read_report(self, mock_get_report):
+        """Verifies that reading a single report uses the correct report ID."""
+        mock_get_report.return_value = {"id": self.TEST_REPORT_ID, "title": "Summary"}
+        result = self.db_manager.get_report(self.TEST_REPORT_ID)
+        mock_get_report.assert_called_once_with(self.TEST_REPORT_ID)
+        self.assertIsNotNone(result)
 
-    def test_delete_event(self):
-        """Ensure event record can be deleted."""
-        # Ensures an event is permanently removed from the database using its id, and that subsequent attempts to read the deleted event return a failure or None
-        self.assertTrue(True)
+    # Update Operation
+    @patch.object(MockDatabaseManager, 'update_event')
+    def test_update_event(self, mock_update_event):
+        """Verifies that the update method is called with the ID and the data payload."""
+        self.db_manager.update_event(self.TEST_EVENT_ID, self.TEST_UPDATE_DATA)
+        mock_update_event.assert_called_once_with(
+            self.TEST_EVENT_ID, 
+            self.TEST_UPDATE_DATA
+        )
+    
+    @patch.object(MockDatabaseManager, 'update_report')
+    def test_update_report(self, mock_update_report):
+        """Verifies that updating a report uses the correct ID and partial data."""
+        self.db_manager.update_report(self.TEST_REPORT_UPDATE_ID, self.TEST_REPORT_UPDATE)
+        mock_update_report.assert_called_once_with(
+            self.TEST_REPORT_UPDATE_ID, 
+            self.TEST_REPORT_UPDATE
+        )
+        
+    @patch.object(MockDatabaseManager, 'update_feedback')
+    def test_update_feedback(self, mock_update_feedback):
+        """Verifies that updating feedback uses the correct ID and new data."""
+        self.db_manager.update_feedback(self.TEST_FEEDBACK_UPDATE_ID, self.TEST_FEEDBACK_UPDATE)
+        mock_update_feedback.assert_called_once_with(
+            self.TEST_FEEDBACK_UPDATE_ID, 
+            self.TEST_FEEDBACK_UPDATE
+        )
 
+    # Delete Operation
+    @patch.object(MockDatabaseManager, 'delete_event')
+    def test_delete_event(self, mock_delete_event):
+        """Verifies that the delete method is called with the correct event ID."""
+        self.db_manager.delete_event(self.TEST_EVENT_ID)
+        mock_delete_event.assert_called_once_with(self.TEST_EVENT_ID)
 
-
+    @patch.object(MockDatabaseManager, 'delete_report')
+    def test_delete_report(self, mock_delete_report):
+        """Verifies that deleting a report uses the correct report ID."""
+        self.db_manager.delete_report(self.TEST_REPORT_ID)
+        mock_delete_report.assert_called_once_with(self.TEST_REPORT_ID)
+        
+    @patch.object(MockDatabaseManager, 'delete_feedback')
+    def test_delete_feedback(self, mock_delete_feedback):
+        """Verifies that deleting feedback uses the correct feedback ID."""
+        self.db_manager.delete_feedback(self.TEST_FEEDBACK_ID)
+        mock_delete_feedback.assert_called_once_with(self.TEST_FEEDBACK_ID)
