@@ -2,11 +2,11 @@ import tkinter as tk
 from ui.dashboard import Dashboard
 from ui.add_event import AddEventFrame
 from ui.view_events import ViewEventsFrame
-# TODO: implement more screens
-# from ui.run_prediction import RunPredictionFrame
-# from ui.reports import ReportsFrame
+from ui.reports import ReportsFrame
+from ui.settings import SettingsFrame
 
 from db.database_manager import DatabaseManager
+from ml.ml_model import PriorityModel
 
 # Navigate between different screens for the user
 class SchedulerApp(tk.Tk):
@@ -14,10 +14,12 @@ class SchedulerApp(tk.Tk):
         super().__init__()
 
         self.title("Linear Regression Priority Scheduler")
-        self.geometry("600x400")
+        # self.geometry("600x400")
+        self.geometry("950x650")
 
         self.username = username
         self.role = role
+
         # Create the shared DatabaseManager instance here
         self.db_manager = DatabaseManager(
             host="localhost",
@@ -28,6 +30,9 @@ class SchedulerApp(tk.Tk):
         # set up connection to DB at begin of program run
         self.db_manager.connect_db()
 
+        # Link the Machine learning to the application
+        self.ml_manager = PriorityModel()
+
         # Container for all frames
         container = tk.Frame(self)
         container.pack(fill="both", expand=True)
@@ -35,9 +40,7 @@ class SchedulerApp(tk.Tk):
         self.frames = {}
 
         # Initialize all screens
-        # for F in (Dashboard, AddEventFrame, ViewEventsFrame, RunPredictionFrame, ReportsFrame): # How it should look in the future once implemented multiple pages
-        # for F in (Dashboard, AddEventFrame):#, ViewEventsFrame, RunPredictionFrame, ReportsFrame):
-        for F in (Dashboard, AddEventFrame, ViewEventsFrame):#, RunPredictionFrame, ReportsFrame):
+        for F in (Dashboard, AddEventFrame, ViewEventsFrame, ReportsFrame, SettingsFrame):#, RunPredictionFrame, ReportsFrame):
             frame = F(container, self)
             self.frames[F] = frame
             frame.grid(row=0, column=0, sticky="nsew")
