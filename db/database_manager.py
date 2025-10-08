@@ -1,11 +1,9 @@
 # CRUD opperations + Connection logic
-
-
-# import sqlite3
 from pathlib import Path
 import mysql.connector
-# from dotenv import load_dotenv
+import pandas as pd 
 import os
+import json
 
 # Database connection parameters
 db_config = {
@@ -15,7 +13,7 @@ db_config = {
     "database": "event_storage_db"
 }
 
-
+# TODO: modify db_path field, not used anymore
 class DatabaseManager:
     def __init__(self, host, user, password, database, db_path="preferences.db"):
         self.db_path = Path(db_path)
@@ -32,16 +30,12 @@ class DatabaseManager:
         """
         Create the users and events table if it doesn't exist.
         """
-        raise NotImplementedError("DB init not implemented yet.")
 
     def connect_db(self):
         """
         Attempt a connection to the database
         """
-        # load_dotenv()
-
         # ensure the connection is not already present
-        # TODO: remove printout in terminal, callback to user loging screen
         if self.conn is not None and self.conn.is_connected():
             print("Connection alrady established")
             return
@@ -54,7 +48,6 @@ class DatabaseManager:
                 database=self.database
             )
             print("Successful connection to database")
-            # self.user_id = self.add_user(self.user, "user")
             self.add_user(self.user, "user")
             self.get_user_id_by_username(self.user)
         except mysql.connector.Error as err:
@@ -104,7 +97,6 @@ class DatabaseManager:
         finally:
             cursor.close()
 
-# TODO: additional method for get event by event_id needs to be made
     def get_event_id_by_event_name(self, event_name):
         """
         Queries the 'events' table for an event by its event_name.
@@ -151,7 +143,6 @@ class DatabaseManager:
             return None
 
         cursor = self.conn.cursor()
-        # query = "INSERT INTO users (username, password_hash) VALUES (%s, %s)"
         query = "INSERT INTO users (username, role) VALUES (%s, %s)"
         try:
             cursor.execute(query, (username, role))
@@ -174,7 +165,7 @@ class DatabaseManager:
     # created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     # created_by INT,
     # FOREIGN KEY (created_by) REFERENCES users(user_id)
-    def add_event(self, event_name, event_date, event_duration, actual_priority):
+    def add_event(self, event_name, event_date, event_duration, actual_priority, predicted_priority, participant_count):
         """
         Adds a new event to the 'events' table.
         
@@ -191,18 +182,23 @@ class DatabaseManager:
             print("Not connected to the database.")
             return
 
-
         cursor = self.conn.cursor()
-        query = "INSERT INTO events (event_name, event_date, event_duration, actual_priority) VALUES (%s, %s, %s, %s)"
-        values = (event_name, event_date, event_duration, actual_priority)
+        query = "INSERT INTO events (event_name, event_date, event_duration, actual_priority, predicted_priority, participant_count) VALUES (%s, %s, %s, %s, %s, %s)"
+        values = (event_name, event_date, event_duration, actual_priority, predicted_priority, participant_count)
         try:
             cursor.execute(query, values)
+            event_id_produced = cursor.lastrowid
+            print("Db: add_event: event_id was retreived as: ")
+            print(event_id_produced)
             self.conn.commit()
-            print(f"Event '{event_name}' added successfully.")
+            print(f"Event '{event_name}' added successfully under '{event_id_produced}'.")
+            return event_id_produced
         except mysql.connector.Error as err:
             print(f"Error adding event: {err}")
+            return -1
         finally:
             cursor.close()
+            
 
 
  # predictions schema:
@@ -239,47 +235,22 @@ class DatabaseManager:
         finally:
             cursor.close()
 
-
-    # def update_feedback(self, event_id, confirmed)
-    #     # check that there is a prediction for the event_id so that we can confirm it
-        
-    #     confirm_value = 1
-
-        # if confirmed:
-        #     # update the prediction to have the 'feedback' boolean set to 1
-        #     return
-        # else:
-        #     # update teh prediction to have the feedback bool set to 0
-        #     return
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
     def confirm_prediction(self, event_id: int) -> bool:
         """
         Mark a prediction as confirmed (feedback = TRUE).
         Returns True if the update was successful.
         """
+        if not self.conn or not self.conn.is_connected():
+            print("Not connected to the database.")
+            return None
+
+        cursor = self.conn.cursor()
         try:
-            # self.connect_db()
+            self.connect_db()
             query = "UPDATE predictions SET feedback = TRUE WHERE event_id = %s"
-            self.cursor.execute(query, (event_id,))
+            cursor.execute(query, (event_id,))
             self.conn.commit()
-            return self.cursor.rowcount > 0
+            return cursor.rowcount > 0
         except Exception as e:
             print(f"Error confirming prediction {event_id}: {e}")
             return False
@@ -289,25 +260,20 @@ class DatabaseManager:
         Mark a prediction as denied (feedback = FALSE).
         Returns True if the update was successful.
         """
+        if not self.conn or not self.conn.is_connected():
+            print("Not connected to the database.")
+            return None
+
+        cursor = self.conn.cursor()
         try:
-            # self.connect_db()
+            self.connect_db()
             query = "UPDATE predictions SET feedback = FALSE WHERE event_id = %s"
-            self.cursor.execute(query, (event_id,))
+            cursor.execute(query, (event_id,))
             self.conn.commit()
-            return self.cursor.rowcount > 0
+            return cursor.rowcount > 0
         except Exception as e:
             print(f"Error denying prediction {event_id}: {e}")
             return False
-
-
-
-
-
-
-
-
-
-
 
     # Predictions table CRUD methods
     def create_prediction(self, predicted_priority: int, event_id: int, feedback=None) -> int:
@@ -335,9 +301,11 @@ class DatabaseManager:
         """
         try:
             self.connect_db()
-            query = "SELECT * FROM predictions WHERE prediction_id = %s"
+            query = "SELECT * FROM predictions WHERE prediction_id = %s LIMIT 1"
             self.cursor.execute(query, (prediction_id,))
             row = self.cursor.fetchone()
+            # empty the buffer connection
+            self.cursor.fetchall()
             if row:
                 return {
                     "prediction_id": row[0],
@@ -423,57 +391,111 @@ class DatabaseManager:
 
 
 
-
-
-
-
-
-
-
-
     # Reports CRUD methods
-    def create_report(self, report_title: str, report_type: str, report_content: dict, user_id: int) -> int:
+    def create_report(self, report_title: str, report_type: str, report_content: dict) -> int:
         """
         Insert a new report. Report content is stored as JSON.
         Returns report_id.
         """
+        if not self.conn or not self.conn.is_connected():
+            print("Not connected to the database.")
+            return None
+
+        cursor = self.conn.cursor()
+
+        print("DB:Create report")
         try:
-            import json
             self.connect_db()
             query = """
-                INSERT INTO reports (report_title, report_type, report_content, user_id)
-                VALUES (%s, %s, %s, %s)
+                INSERT INTO reports (report_title, report_type, report_content) VALUES (%s, %s, %s)
             """
-            self.cursor.execute(query, (report_title, report_type, json.dumps(report_content), user_id))
+            report_json = json.dumps(report_content)
+            values = (report_title, report_type, report_json)
+
+            print("made json")
+            cursor.execute(query, values)
             self.conn.commit()
-            return self.cursor.lastrowid
+            return cursor.lastrowid
         except Exception as e:
             print(f"Error creating report: {e}")
             return None
 
-    def get_report(self, report_id: int):
+    def get_report(self, report_id: int) -> dict:
         """
         Retrieve a single report by ID.
         """
+        if not self.conn or not self.conn.is_connected():
+            print("Not connected to the database.")
+            return None
+
+        cursor = self.conn.cursor()
+        print("DB:Get report")
         try:
-            import json
             self.connect_db()
-            query = "SELECT * FROM reports WHERE report_id = %s"
-            self.cursor.execute(query, (report_id,))
-            row = self.cursor.fetchone()
+            query = "SELECT * FROM reports WHERE report_id = %s LIMIT 1"
+            cursor.execute(query, (report_id,))
+            row = cursor.fetchone()
             if row:
                 return {
                     "report_id": row[0],
                     "report_title": row[1],
                     "report_type": row[2],
                     "report_content": json.loads(row[3]) if row[3] else None,
-                    "report_timestamp": row[4],
-                    "user_id": row[5],
+                    "report_timestamp": row[4]
                 }
             return None
         except Exception as e:
             print(f"Error fetching report {report_id}: {e}")
             return None
+        
+    def get_reports_by_type(self, report_type: str) -> list[dict]:
+        """
+        Retrieve all reports matching the given report type.
+        """
+        if not self.conn or not self.conn.is_connected():
+            print("Not connected to the database.")
+            return None
+
+        # Initialize an empty list to hold the structured report objects
+        all_reports = [] 
+        
+        cursor = self.conn.cursor()
+        print(f"DB: Getting all reports of type: {report_type}")
+        
+        try:
+            self.connect_db() 
+            
+            query = "SELECT report_id, report_title, report_type, report_content, report_timestamp FROM reports WHERE report_type = %s"
+            cursor.execute(query, (report_type,))
+            
+            all_rows = cursor.fetchall() 
+            print("inside get_reports_by_type: inside try: all rows retrieved: ")
+            print(all_rows)
+            if all_rows:
+                
+                for row in all_rows:
+                    # Convert each row (tuple) into a structured dictionary
+                    report_obj = {
+                        "report_id": row[0],
+                        "report_title": row[1],
+                        "report_type": row[2],
+                        # Deserialize the JSON content back into a python dictionary
+                        "report_content": json.loads(row[3]) if row[3] else None,
+                        "report_timestamp": row[4]
+                    }
+                    all_reports.append(report_obj)
+                print("list fully inserted into")
+                # Return the list of all structured reports
+                return all_reports 
+            # Return an empty list if no rows returned in above if
+            return [] 
+            
+        except Exception as e:
+            print(f"Error fetching reports of type {report_type}: {e}")
+            return None
+        finally:
+            if cursor:
+                cursor.close()
 
     def get_all_reports(self):
         """
@@ -492,7 +514,6 @@ class DatabaseManager:
                     "report_type": row[2],
                     "report_content": json.loads(row[3]) if row[3] else None,
                     "report_timestamp": row[4],
-                    "user_id": row[5],
                 }
                 for row in rows
             ]
@@ -547,22 +568,6 @@ class DatabaseManager:
             return False
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
     def get_user_count(self):
         """Example method to query the database."""
         if not self.conn or not self.conn.is_connected():
@@ -595,10 +600,65 @@ class DatabaseManager:
         try:
             cursor.execute(query)
             result = cursor.fetchall()
+            column_names = [i[0] for i in cursor.description]
+
+            print("The column names are: ")
+            print(column_names)
+            
             return result
         except mysql.connector.Error as err:
             print(f"Error getting events: {err}")
             return []
+        finally:
+            cursor.close()
+
+    def get_all_events_as_dataframe(self) -> pd.DataFrame:
+        """
+        Retrieves all events from the 'predictions' table and returns them as a Pandas DataFrame.
+        This is the most efficient method for preparing data for machine learning.
+        
+        Returns:
+            pd.DataFrame: DataFrame containing all event data.
+        """
+        if not self.conn or not self.conn.is_connected():
+            print("Not connected to the database.")
+            return pd.DataFrame()
+
+        cursor = self.conn.cursor()
+        # possible left join to use in future implementation
+        # query = """
+        #         SELECT
+        #             e.*,
+        #             p.predicted_priority,
+        #             p.feedback
+        #         FROM
+        #             events e
+        #         LEFT JOIN
+        #             predictions p ON e.event_id = p.event_id
+        #     """
+        query = "SELECT * FROM events"
+
+        try:
+            cursor.execute(query)
+            result = cursor.fetchall()
+
+            # column names from the cursor description
+            # The cursor's description attribute holds metadata about the columns.
+            # Each item in the description is a tuple, and the column name is the first element (index 0).
+            column_names = [i[0] for i in cursor.description]
+    
+            # Create the DataFrame
+            df = pd.DataFrame(result, columns=column_names)
+
+            # Clean Data (Filter out rows without user feedback)
+            # Only train the model on data where the user has confirmed or denied the prediction.
+            # df_training = df.dropna(subset=['feedback'])
+
+            # return df_training
+            return df
+        except mysql.connector.Error as err:
+            print(f"Error getting events: {err}")
+            return pd.DataFrame()
         finally:
             cursor.close()
 
@@ -637,51 +697,3 @@ class DatabaseManager:
             return False
         finally:
             cursor.close()
-
-
-
-
-
-# 
-if __name__ == '__main__':
-    db_manager = DatabaseManager(
-        host="localhost",
-        user="app_user",
-        password="your_strong_password",
-        database="event_storage_db"
-    )
-
-    # Connect to the database
-    db_manager.connect_db()
-
-    db_manager.method("")
-
-    products = db_manager.get_all_products()
-    print("\nAll products:")
-    for product in products:
-        print(product)
-        db_manager.delete_product(product[0])
-
-    # U - Update (Change the quantity of the laptop)
-    # Note: We assume the Laptop has ID 1 for this example.
-    # You might get a different ID depending on what's in your DB.
-    # db_manager.update_product_quantity(1, 8)
-
-    # # R - Read again to see the changes
-    # products = db_manager.get_all_products()
-    # print("\nAll products after update:")
-    # for product in products:
-    #     print(product)
-
-    # # D - Delete (Delete the mouse)
-    # # Note: We assume the Mouse has ID 2 for this example.
-    # db_manager.delete_product(2)
-
-    # # R - Read one last time
-    # products = db_manager.get_all_products()
-    # print("\nAll products after deletion:")
-    # for product in products:
-    #     print(product)
-
-    # Close the connection when all operations are finished
-    db_manager.close_db()
